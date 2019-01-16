@@ -1,11 +1,11 @@
 # Transductive Learning for Reading Handwritten Tibetan Manuscripts by Sivan Keret
 
-This software implements trunsductive learning for unsupervised handwritten character recognition. 
+This software implements transductive learning for unsupervised handwritten character recognition. 
 It includes:
 - A projective based unsupervised line segmentation algorithm
 - Synthetic text generation and data augmentation for HCR training
 - CRNN implementation for HCR
-- Implementation of three method for transductive learning for HCR: CycleGan, DANN and VAT 
+- Implementation of three methods for transductive learning for HCR: CycleGan, DANN and VAT 
 
 The repository also includes a new test set containing 167 transcribed images of \emph{bKa’ gdams gsung ’bum} collection. \
 The software was tested on this collection and shows promising results.
@@ -53,14 +53,14 @@ bin/main_show_fonts | grep Qomolangma
 You should see these four font families:
    - Shangshung Sgoba-KhraChung
    - Shangshung Sgoba-KhraChen
-   - Qomolangma-Betsu
+   - Qomolangma-Drutsa
    - Qomolangma-Betsu
 - to test compilation run:
 ```console
 bash test.sh
 ```
 
-### Create python evironment and install dependencies
+### Create Python environment and install dependencies
 ```console
 cd <base project dir>
 conda create -n tibetan_hcr python=3.6
@@ -73,8 +73,8 @@ make
 cd ../pytorch_binding
 python setup.py install
 cd ../..
-#export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/cuda-8.0/include'
-export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/stow/cuda-8.0/lib/cuda-8.0/include/'
+export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/cuda-8.0/include'
+#export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/stow/cuda-8.0/lib/cuda-8.0/include/'
 git clone --recursive https://github.com/parlance/ctcdecode.git
 cd ctcdecode
 pip install .
@@ -89,10 +89,11 @@ There are three parts to data preparation:
 1. Using unsupervised line segmentation to separate test images to lines
 2. Rendering synthetic multi line images and separating lines using line segmentation
 3. Creating a character lexicon from both training and testing datasets.
-We provide two ways to get data fom training and testing:
-1. downloding prepared data
+
+We provide two ways to get data from training and testing:
+1. Downloading prepared data
 2. Instructions and code to prepare data
-### Downloading Prepared Validation and Syntesized Train Data
+### Downloading Prepared Validation and Synthesized Train Data
 1. Get prepared synthetic data:
     - Download Prepared Data ([google drive link](https://drive.google.com/file/d/1Z_ar_ogYmCN_VFKGsav5nP12AN1_Dn3P/view?usp=sharing))
 to *Data/Synthetic*
@@ -101,18 +102,18 @@ to *Data/Synthetic*
     tar -xzvf synth_prepared.tar.gz
     ```
 2. Get prepared test data-set:
-    - Download Prepared Data ([google drive link](https://drive.google.com/file/d/1ulgZVktJmnFMMOIn9zCb8Z_BLJ7J7--T/view?usp=sharing)
+    - Download Prepared Data ([google drive link](https://drive.google.com/file/d/1ulgZVktJmnFMMOIn9zCb8Z_BLJ7J7--T/view?usp=sharing))
     to *Data/Test*
     - untar file:
     ```console
     tar -xzvf test_prepared.tar.gz
     ```
 3. Get prepared character lexicon:
-- Download character lexicon file ([google drive link](https://drive.google.com/file/d/1TFdYqYYEdpREfcQGfgECMm37czU8wqBw/view?usp=sharing)
+- Download character lexicon file ([google drive link](https://drive.google.com/file/d/1TFdYqYYEdpREfcQGfgECMm37czU8wqBw/view?usp=sharing))
     to *Data*
 ### Preparing Test and Train data
 1. Segment test images to lines & create dataset file:
-    - Download test images ([google drive link](https://drive.google.com/file/d/1ndn7uquU25J97_DK-V9FuMNN2AL65s1y/view?usp=sharing)))
+    - Download test images ([google drive link](https://drive.google.com/file/d/1ndn7uquU25J97_DK-V9FuMNN2AL65s1y/view?usp=sharing))
     to *Data/Test*
     - Untar file:
     ```console
@@ -137,8 +138,8 @@ cd Src/data_preperation
 python 3_create_class_dict.py
 ```    
 ## Training & Testing
-Now that you have the dataset prepared and all the prerequisits installed, you can run CRNN trainig and testing.
-To do so go to _base_project_dir/Src_.
+Now that you have the dataset prepared and all the prerequisits installed, you can run CRNN training and testing.
+To do so, go to _base_project_dir/Src_.
 ### Training Options
 - Transductive VAT
 ```console
