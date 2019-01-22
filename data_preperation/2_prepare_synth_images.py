@@ -324,7 +324,7 @@ def init_multi_p(in_lock):
 
 def create_all_images(text_dir, outdir, data_info_list,
                       data_info_probs, data_info_name,
-                      do_size_rand, num_parallel):
+                      do_size_rand, num_parallel, amount_of_text_files2use):
     num_lines_in_file = 5 if data_info_list[0].multi_line else 1
     font_dir = str(pathlib.Path('extra/Fonts').absolute())
     base_path = pathlib.Path(outdir)
@@ -335,6 +335,8 @@ def create_all_images(text_dir, outdir, data_info_list,
     base_text_path.mkdir(parents=False, exist_ok=True)
     all_texts = glob.glob(os.path.join(text_dir, '*.txt'))
     all_texts = all_texts
+    if amount_of_text_files2use != -1:
+        all_texts = all_texts[:amount_of_text_files2use]
     out_file = base_path / 'data.txt'
 
     out_file = str(out_file)
@@ -385,6 +387,8 @@ if __name__=='__main__':
     parser.add_argument('--remove_space_initial_sign', default=False, action='store_true')
     parser.add_argument('--remove_letter_sizes_rand', default=False, action='store_true')
     parser.add_argument('--no_multi_line', default=False, action='store_true')
+    parser.add_argument('--amount_of_text_files2use', type=int, default=-1,
+                        help='number of text files to process')
     args = parser.parse_args()
 
     text_dir_path = args.text_dir
@@ -428,7 +432,7 @@ if __name__=='__main__':
 
     os.makedirs(out_dir, exist_ok=True)
     lines = create_all_images(text_dir_path, out_dir, data_info_list,
-                              data_info_probs, data_info_name, do_size_rand, args.num_parallel)
+                              data_info_probs, data_info_name, do_size_rand, args.num_parallel, args.amount_of_text_files2use)
     out_file = os.path.join(out_dir, 'data.txt')
     train_file = os.path.join(out_dir, 'data_train.txt')
     val_file = os.path.join(out_dir, 'data_val.txt')
