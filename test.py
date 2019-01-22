@@ -24,7 +24,6 @@ import editdistance
 from models.Attention.Loss import NLLLoss
 
 from dataset.data_transform import Resize, AddWidth, Normalize
-
 from difflib import get_close_matches
 
 
