@@ -1,8 +1,10 @@
 from os.path import basename, join, exists
 from glob import glob
-text_files = '/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Orig/lines/Texts/*.txt'
-images_dir = '/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Orig/lines/cropped'
-out_file = '/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Orig/lines/dataset.txt'
+
+root_dir = '/home/wolf/alexeyp'
+text_files = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/Texts/*.txt'
+images_dir = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/cropped'
+out_file = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/dataset.txt'
 
 if exists(out_file):
     raise Exception("file should not exist.")

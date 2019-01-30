@@ -19,6 +19,7 @@ from itertools import islice
 from random import randint, shuffle
 import time
 
+root_dir = '/home/wolf/alexeyp'
 god_replace = '****'
 
 def clean_hebrew(text, god_list):
@@ -294,13 +295,13 @@ def create_all_images(text_dir, outdir, data_info_list, data_info_probs, data_in
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dir_path', dest="input_dir_path",
-                        type=str, default='/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Texts/mishna',
+                        type=str, default=root_dir + 'ocr_datasets/Hebrew/Dataset/Texts/mishna',
                         help=('tibetan_dir'))
     parser.add_argument('--out_dataset_dir', dest="out_dataset_dir", type=str,
-                        default='/media/data1/sivankeret/ocr_datasets/Hebrew/synth/mishna_2',
+                        default=root_dir + 'ocr_datasets/Hebrew/synth/mishna_2',
                         help='Path to directory to save output in. file to save output dataset in (<full image path><seperator><text>\\n) format.')
     parser.add_argument('--tmp_workplace', dest="tmp_workplace", type=str,
-                        default='/media/data1/sivankeret/ocr_datasets/Hebrew/synth/mishna_2/tmp',
+                        default=root_dir + 'ocr_datasets/Hebrew/synth/mishna_2/tmp',
                         help='Path to directory to save output in. file to save output dataset in (<full image path><seperator><text>\\n) format.')
 
     parser.add_argument('--out_name', dest="out_name",

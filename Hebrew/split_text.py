@@ -1,6 +1,7 @@
 import os
 
-orig_text = '/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Texts/mishna.txt'
+root_dir = '/home/wolf/alexeyp'
+orig_text = root_dir + 'ocr_datasets/Hebrew/Dataset/Texts/mishna.txt'
 
 new_dir = orig_text[:-4]
 os.makedirs(new_dir,exist_ok=True)

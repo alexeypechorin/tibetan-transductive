@@ -10,6 +10,8 @@ from skimage.transform import resize
 from functools import partial
 from skimage import color
 
+root_dir = '/home/wolf/alexeyp'
+
 def read_resize_image(img_path, max_width, max_hight):
     img = imread(img_path)
     print(img.shape)
@@ -45,7 +47,7 @@ def proccess_image(im_path, max_width, max_hight):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_files_pattern',
-                        type=str, default='/media/data1/sivankeret/ocr_datasets/Hebrew/Dataset/Orig/Images/*.png',
+                        type=str, default=root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/Images/*.png',
                         help=('tibetan_dir'))
     parser.add_argument('--do_parallel', default=False, action='store_true')
     parser.add_argument('--max_width', default=1920)
