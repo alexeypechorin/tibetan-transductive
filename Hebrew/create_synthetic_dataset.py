@@ -19,7 +19,7 @@ from itertools import islice
 from random import randint, shuffle
 import time
 
-root_dir = '/home/wolf/alexeyp'
+root_dir = '/home/wolf/alexeyp/'
 god_replace = '****'
 
 def clean_hebrew(text, god_list):

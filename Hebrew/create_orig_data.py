@@ -10,7 +10,7 @@ from skimage.transform import resize
 from functools import partial
 from skimage import color
 
-root_dir = '/home/wolf/alexeyp'
+root_dir = '/home/wolf/alexeyp/'
 
 def read_resize_image(img_path, max_width, max_hight):
     img = imread(img_path)

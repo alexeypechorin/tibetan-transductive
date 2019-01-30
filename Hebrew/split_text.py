@@ -1,6 +1,6 @@
 import os
 
-root_dir = '/home/wolf/alexeyp'
+root_dir = '/home/wolf/alexeyp/'
 orig_text = root_dir + 'ocr_datasets/Hebrew/Dataset/Texts/mishna.txt'
 
 new_dir = orig_text[:-4]

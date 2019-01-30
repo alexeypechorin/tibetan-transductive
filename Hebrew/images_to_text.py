@@ -1,7 +1,7 @@
 from os.path import basename, join, exists
 from glob import glob
 
-root_dir = '/home/wolf/alexeyp'
+root_dir = '/home/wolf/alexeyp/'
 text_files = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/Texts/*.txt'
 images_dir = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/cropped'
 out_file = root_dir + 'ocr_datasets/Hebrew/Dataset/Orig/lines/dataset.txt'
