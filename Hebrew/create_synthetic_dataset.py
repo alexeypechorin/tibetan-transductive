@@ -22,6 +22,8 @@ import time
 root_dir = '/home/wolf/alexeyp/'
 god_replace = '****'
 
+tmp_workplace = os.path.join(root_dir, 'ocr_datasets/Hebrew/synth/mishna_2/tmp')
+
 def clean_hebrew(text, god_list):
     for word in god_list:
         text = text.replace(' ' + word + ' ', ' ' + god_replace + ' ')
@@ -162,7 +164,7 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                     letter_spacing = "'" + str(1) + "'"
                     font_size = "'" + str(2) + "'"
                 out_im_path = str(cur_path) + '.png'
-                run_args = ['../TextRender/bin/main', im_text, out_im_path, font_dir, font, font_weight,
+                run_args = ['../data_preperation/extra/TextRender/bin/main', im_text, out_im_path, font_dir, font, font_weight,
                             font_stretch, letter_spacing, font_size]
                 # lock.acquire()
                 subprocess.run(run_args, check=True)
@@ -353,5 +355,5 @@ if __name__=='__main__':
 
     os.makedirs(args.out_dataset_dir, exist_ok=True)
     create_all_images(args.input_dir_path, args.out_dataset_dir, data_info_list, data_info_probs, data_info_name, do_size_rand,
-                      god_names)
+                      god_names, args.tmp_workplace)
     #pikle_to_text(out_dataset_file)
