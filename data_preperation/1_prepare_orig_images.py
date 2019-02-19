@@ -42,7 +42,7 @@ def images_to_lines(text_dir, im_dir):
 def proccess_image(im_path, output_dir):
     try:
         im_path_obj = pathlib.Path(im_path)
-        base_name = im_path_obj.name.split('.')[0].split('-')[1].strip()
+        base_name = extract_base_image_name(im_path_obj)
         line_images = im2lines(im_path)
         for line, image in line_images.items():
             line_path = pathlib.Path(output_dir) / (base_name + '_{}.png'.format(line))
@@ -51,13 +51,23 @@ def proccess_image(im_path, output_dir):
         print("Error proccessing file: {}".format(im_path))
         traceback.print_exc()
 
+
+def extract_base_image_name(im_path_obj):
+    base_file_name = im_path_obj.name.split('.')[0]
+    if '-' in base_file_name:
+        return base_file_name.split('-')[1].strip()
+    elif '_' in base_file_name:
+        return base_file_name.split('_')[0].strip() # Note difference in index (for Wiener collection)
+    else:
+        return base_file_name
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-i', '--input_im_dir', type=str,
                         help='folder containing images for line segmentation',
                         default='../../Data/Test/Original/Images')
     parser.add_argument('-t', '--input_text_dir', type=str,
-                        help='folder containing images for line segmentation',
+                        help='folder containing texts for line segmentation',
                         default='../../Data/Test/Original/Texts')
     parser.add_argument('-o', '--output_dir', type=str,
                         help='path to folder containing output (should not exist)',
