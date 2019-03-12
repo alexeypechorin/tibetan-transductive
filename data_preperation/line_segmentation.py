@@ -22,6 +22,16 @@ import glob
 import cv2
 
 
+class LineSegmentationConfiguration:
+    def __init__(self, dataset):
+        self.opening_neighbourhood_width = 4
+        self.opening_neighbourhood_height = 20
+        if dataset.lower() == 'wiener':
+            self.closing_neighbourhood_size = 15
+        else:
+            self.closing_neighbourhood_size = 7
+
+
 def smooth(a,WSZ=5):
     # a: NumPy 1-D array containing the data to be smoothed
     # WSZ: smoothing window size needs, which must be odd number,
@@ -198,7 +208,8 @@ def clean_image(bw, threshold=0.1):
 
 def im2lines(img_path, tmp_workplace=None, verbose=False,
              addaptive=False, eps=10, max_theta_diff=1.5, do_morphologic_cleaning=True,
-             closing_neighbourhood_size=7, opening_neighbourhood_width=4, opening_neighbourhood_height=20):
+             dataset_name="Tibetan"):
+    config = LineSegmentationConfiguration(dataset_name)
     orig_image = imread(img_path)
     if len(orig_image.shape) > 2 and  orig_image.shape[2] > 1:
         image = rgb2grey(orig_image)
@@ -219,13 +230,14 @@ def im2lines(img_path, tmp_workplace=None, verbose=False,
         cleared = clean_image(bw, threshold=0.1)
         if verbose:
             imsave(os.path.join(tmp_workplace, 'im_1_after_clean.png'), cleared * 255)
-        cleared = closing(cleared, square(closing_neighbourhood_size)) # for drutsa - 5
+        cleared = closing(cleared, square(config.closing_neighbourhood_size)) # for drutsa - 5
         if verbose:
             imsave(os.path.join(tmp_workplace, 'im_2_after_closing.png'), cleared * 255)
         cleared = clear_border(cleared)
         if verbose:
             imsave(os.path.join(tmp_workplace, 'im_3_after_clear_border.png'), cleared * 255)
-        cleared = opening(cleared, rectangle(width=opening_neighbourhood_width, height=opening_neighbourhood_height))
+        cleared = opening(cleared, rectangle(width=config.opening_neighbourhood_width,
+                                             height=config.opening_neighbourhood_height))
         if verbose:
             imsave(os.path.join(tmp_workplace, 'im_4_after_opening.png'), cleared * 255)
     else:
