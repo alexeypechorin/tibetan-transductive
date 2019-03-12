@@ -93,6 +93,14 @@ def find_lines_theta_rho(im, tmp_workplace=None, verbose=False, eps=20, max_thet
         peak_rhos[i] = rho - eps + cur_rho
 
     peak_thetas = [theta-90 for theta in peak_thetas]
+    if verbose:
+        print('thetas of rows')
+        print(peak_thetas)
+        print('rhos of rows')
+        print(peak_rhos)
+        ax.plot(peak_rhos.astype(int).reshape(-1), rhos[peak_rhos.astype(int).reshape(-1)], 'o')
+        f.savefig(os.path.join(tmp_workplace,'rhos_smoothed.png'))
+        plt.close()
     return peak_thetas, peak_rhos, mean_rho_dist
 
 
@@ -189,7 +197,8 @@ def clean_image(bw, threshold=0.1):
 
 
 def im2lines(img_path, tmp_workplace=None, verbose=False,
-             addaptive=False, eps=10, max_theta_diff=1.5, do_morphologic_cleaning=True):
+             addaptive=False, eps=10, max_theta_diff=1.5, do_morphologic_cleaning=True,
+             closing_neighbourhood_size=7, opening_neighbourhood_width=4, opening_neighbourhood_height=20):
     orig_image = imread(img_path)
     if len(orig_image.shape) > 2 and  orig_image.shape[2] > 1:
         image = rgb2grey(orig_image)
@@ -203,12 +212,22 @@ def im2lines(img_path, tmp_workplace=None, verbose=False,
         thresh = threshold_otsu(image) # Fisher Discriminant Analysis backround intensity detector
         bw = image > thresh
     bw = 1 - bw.astype(int)
+    if verbose:
+        imsave(os.path.join(tmp_workplace, 'im_0_bw.png'), bw * 255)
     # remove artifacts connected to image border
     if do_morphologic_cleaning:
         cleared = clean_image(bw, threshold=0.1)
-        cleared = closing(cleared, square(7)) # for drutsa - 5
+        if verbose:
+            imsave(os.path.join(tmp_workplace, 'im_1_after_clean.png'), cleared * 255)
+        cleared = closing(cleared, square(closing_neighbourhood_size)) # for drutsa - 5
+        if verbose:
+            imsave(os.path.join(tmp_workplace, 'im_2_after_closing.png'), cleared * 255)
         cleared = clear_border(cleared)
-        cleared = opening(cleared, rectangle(width=4, height=28))
+        if verbose:
+            imsave(os.path.join(tmp_workplace, 'im_3_after_clear_border.png'), cleared * 255)
+        cleared = opening(cleared, rectangle(width=opening_neighbourhood_width, height=opening_neighbourhood_height))
+        if verbose:
+            imsave(os.path.join(tmp_workplace, 'im_4_after_opening.png'), cleared * 255)
     else:
         cleared=bw
     peak_thetas, peak_rhos, mean_rho_dist = find_lines_theta_rho(cleared, tmp_workplace=tmp_workplace,
@@ -219,7 +238,32 @@ def im2lines(img_path, tmp_workplace=None, verbose=False,
     regions = regionprops(label_image)
     thresh_area = 0.1 * np.percentile([reg.area for reg in regions], 80)
     line2im, line2centroid = separate_ccs_by_lines(regions, label_image, lines_x1_y1_x2_y2, mean_rho_dist)
+    if verbose:
+        for i, im in enumerate(line2im.values()):
+            imsave(os.path.join(tmp_workplace, 'line_label_im_{}.png'.format(i)), im)
+
+    if verbose:
+        cent_file = os.path.join(tmp_workplace, 'centroids_by_lines.pkl')
+        with open(cent_file, 'wb') as f:
+            pkl.dump({'line2centroid':line2centroid}, f)
+            print('dumped pickle dataset')
     line2im = rotate_crop_images(orig_image, line2im, peak_thetas, peak_rhos, thresh_area)
+    if verbose:
+        im_to_color = orig_image.copy()
+        colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
+        lineThickness = 2
+        for i, line_xy in enumerate(lines_x1_y1_x2_y2):
+            color = colors[i]
+            cv2.line(im_to_color, (line_xy[0,1], line_xy[0,0]), (line_xy[0,3], line_xy[0,2]), color, lineThickness)
+        f, ax = plt.subplots(1)
+        ax.imshow(cleared)
+        for line_xy in lines_x1_y1_x2_y2:
+            ax.plot([line_xy[0,1], line_xy[0,3]], [line_xy[0,0], line_xy[0,2]],
+                    linewidth=2.5)
+            # plot(rotated_lines[0, :], rotated_lines[1, :], 'b', 'linewidth', 2, 'color', lines_by_color(p,:))
+        f.savefig(os.path.join(tmp_workplace + 'image_with_lines.png'))
+        plt.close()
+
     return line2im
 
 
