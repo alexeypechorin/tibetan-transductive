@@ -13,7 +13,17 @@ if __name__ == '__main__':
         # print(filename)
         file = open(filename)
         words_dict = json.load(file)
-        words_string = ' '.join([d['word'] for d in words_dict])
+        last_bbox_bound = 0
+        words_string = ""
+        for word_data in words_dict:
+            bbox_bound = word_data['bbox'][0]
+            word = word_data['word']
+            if bbox_bound >= last_bbox_bound:
+                separator = ' '
+            else:
+                separator = '\n'
+            last_bbox_bound = bbox_bound
+            words_string = words_string + separator + word
         file.close()
         pre, ext = os.path.splitext(filename)
         new_filename = pre + ".txt"
