@@ -267,8 +267,9 @@ def im2lines(img_path, tmp_workplace=None, verbose=False,
         colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
         lineThickness = 2
         for i, line_xy in enumerate(lines_x1_y1_x2_y2):
-            color = colors[i]
-            cv2.line(im_to_color, (line_xy[0,1], line_xy[0,0]), (line_xy[0,3], line_xy[0,2]), color, lineThickness)
+            color = colors[i % len(colors)]
+            cv2.line(im_to_color, (int(round(line_xy[0, 1])), int(round(line_xy[0, 0]))),
+                     (int(round(line_xy[0, 3])), int(round(line_xy[0, 2]))), color, lineThickness)
         f, ax = plt.subplots(1)
         ax.imshow(cleared)
         for line_xy in lines_x1_y1_x2_y2:
