@@ -1,4 +1,6 @@
 import glob, os
+import shutil
+
 from line_segmentation import im2lines
 import pathlib
 from skimage.io import  imsave
@@ -9,12 +11,14 @@ from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
 
+
 def images_to_lines(text_dir, im_dir):
     images_paths = glob.glob(os.path.join(im_dir, '*.png'))
     existing_images = [Path(path).name.split('_')[0].strip() for path in images_paths]  # orig
     text_paths = glob.glob(os.path.join(text_dir, '*.txt'), recursive=True)
     existing_text = [Path(path).name.split('.')[0].strip() for path in text_paths]
-    valid_data = set([int(d) for d in existing_images]) & set([int(d) for d in existing_text])  # do_itersection
+    # valid_data = set([int(d) for d in existing_images]) & set([int(d) for d in existing_text])  # do_itersection
+    valid_data = set([str(d) for d in existing_images]) & set([str(d) for d in existing_text])  # do_itersection
     im_to_text = {}
     for data in valid_data:
         cur_pattern = os.path.join(im_dir, '{}_*.png'.format(data))  # [ +]{}_*.png
@@ -85,9 +89,19 @@ if __name__ == '__main__':
                         default='Tibetan')
     parser.add_argument('-n', '--num_parallel', type=int,
                         help='number of parallel threads to run', default=8)
+    parser.add_argument('-b', '--debug', type=bool,
+                        help='debug mode - delete output folder, create temporary folder',
+                        default=False)
     args = parser.parse_args()
     if os.path.exists(args.output_dir):
-        raise AssertionError('Output folder should not exist: {}'.format(args.output_dir))
+        if args.debug:
+            shutil.rmtree(args.output_dir)
+        else:
+            raise AssertionError('Output folder should not exist: {}'.format(args.output_dir))
+    if not os.path.exists(args.tmp_workplace):
+        if args.debug:
+            os.makedirs(args.tmp_workplace)
+
     os.makedirs(args.output_dir)
     out_im_dir = os.path.join(args.output_dir, 'LineImages')
     os.makedirs(out_im_dir)
