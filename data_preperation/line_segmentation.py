@@ -119,17 +119,19 @@ def im_lines_from_theta_rho(img, peak_thetas, peak_rhos):
     rad_tetas = [np.radians(theta) for theta in peak_thetas]
     x_center = math.floor(img.shape[1] / 2)
     y_center = math.floor(img.shape[0] / 2)
+    y_excess = max(0, img.shape[0] - img.shape[1])
     lines_x1_y1_x2_y2 = np.zeros((len(peak_rhos), 4))
     for p in range(len(peak_rhos)):
         cur_rho = peak_rhos[p]
 
         cur_line = np.array([[y_center - cur_rho, -x_center], [y_center - cur_rho, x_center]]).T
+
         # Rotate
         rotation_mat = np.array([[np.cos(rad_tetas[p]), -np.sin(rad_tetas[p])],
                                  [np.sin(rad_tetas[p]), np.cos(rad_tetas[p])]])
         rotated_lines = np.matmul(rotation_mat, cur_line)
         # Shift by image center
-        rotated_lines[0, :] = rotated_lines[0, :] + y_center
+        rotated_lines[0, :] = rotated_lines[0, :] + y_center - (y_excess/2)
         rotated_lines[1, :] = rotated_lines[1, :] + x_center
         # add line to peak lines
         lines_x1_y1_x2_y2[p, :] = [rotated_lines[0, 0], rotated_lines[1, 0], rotated_lines[0, 1], rotated_lines[1, 1]]
