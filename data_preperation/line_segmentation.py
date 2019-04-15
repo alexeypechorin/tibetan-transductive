@@ -59,11 +59,12 @@ def is_line_in_bb(bb_p1, bb_p2, v1_v2):
     return does_cross
 
 
-def find_lines_theta_rho(im, tmp_workplace=None, verbose=False, eps=20, max_theta_diff=1.5):
+def find_lines_theta_rho(im, tmp_workplace=None, verbose=False, eps=20, max_theta_diff=1.5,
+                         radon_transform_use_reconstruction_circle=False):
     # find lines using radon transform
     # cleared = (1 - cleared)
     thetas = np.arange(0.0, 180.0, 0.2)
-    sinogram = radon(im, theta=thetas, circle=True)
+    sinogram = radon(im, theta=thetas, circle=radon_transform_use_reconstruction_circle)
     if verbose:
         plt.imshow(sinogram, aspect='auto')
         plt.savefig(os.path.join(tmp_workplace, 'radon_transform.png'))
@@ -114,12 +115,23 @@ def find_lines_theta_rho(im, tmp_workplace=None, verbose=False, eps=20, max_thet
     return peak_thetas, peak_rhos, mean_rho_dist
 
 
-def im_lines_from_theta_rho(img, peak_thetas, peak_rhos):
+def im_lines_from_theta_rho(img, peak_thetas, peak_rhos, radon_transform_use_reconstruction_circle):
+    if radon_transform_use_reconstruction_circle:
+        y_excess = max(0, img.shape[0] - img.shape[1])
+        y_adjustment = -y_excess/2
+    else:
+        diagonal = np.sqrt(2) * max(img.shape)
+        pad = [int(np.ceil(diagonal - s)) for s in img.shape]
+        new_center = [(s + p) // 2 for s, p in zip(img.shape, pad)]
+        old_center = [s // 2 for s in img.shape]
+        pad_before = [nc - oc for oc, nc in zip(old_center, new_center)]
+        y_adjustment = pad_before[0]
+
     # calculate lines by radon peaks
     rad_tetas = [np.radians(theta) for theta in peak_thetas]
     x_center = math.floor(img.shape[1] / 2)
     y_center = math.floor(img.shape[0] / 2)
-    y_excess = max(0, img.shape[0] - img.shape[1])
+
     lines_x1_y1_x2_y2 = np.zeros((len(peak_rhos), 4))
     for p in range(len(peak_rhos)):
         cur_rho = peak_rhos[p]
@@ -131,7 +143,7 @@ def im_lines_from_theta_rho(img, peak_thetas, peak_rhos):
                                  [np.sin(rad_tetas[p]), np.cos(rad_tetas[p])]])
         rotated_lines = np.matmul(rotation_mat, cur_line)
         # Shift by image center
-        rotated_lines[0, :] = rotated_lines[0, :] + y_center - (y_excess/2)
+        rotated_lines[0, :] = rotated_lines[0, :] + y_center + y_adjustment
         rotated_lines[1, :] = rotated_lines[1, :] + x_center
         # add line to peak lines
         lines_x1_y1_x2_y2[p, :] = [rotated_lines[0, 0], rotated_lines[1, 0], rotated_lines[0, 1], rotated_lines[1, 1]]
@@ -244,10 +256,15 @@ def im2lines(img_path, tmp_workplace=None, verbose=False,
             imsave(os.path.join(tmp_workplace, 'im_4_after_opening.png'), cleared * 255)
     else:
         cleared=bw
+    # If height is smaller than width, then it's ok to use reconstruction circle,
+    # since it will capture the lines
+    radon_transform_use_reconstruction_circle = cleared.shape[0] <= cleared.shape[1]
     peak_thetas, peak_rhos, mean_rho_dist = find_lines_theta_rho(cleared, tmp_workplace=tmp_workplace,
-                                                                 verbose=verbose, eps=eps,
-                                                                 max_theta_diff=max_theta_diff)
-    lines_x1_y1_x2_y2 = im_lines_from_theta_rho(cleared, peak_thetas, peak_rhos)
+                     verbose=verbose, eps=eps,
+                     max_theta_diff=max_theta_diff,
+                     radon_transform_use_reconstruction_circle=radon_transform_use_reconstruction_circle)
+    lines_x1_y1_x2_y2 = im_lines_from_theta_rho(cleared, peak_thetas, peak_rhos,
+                                                radon_transform_use_reconstruction_circle)
     label_image = label(bw, neighbors=4, background=0)
     regions = regionprops(label_image)
     thresh_area = 0.1 * np.percentile([reg.area for reg in regions], 80)
