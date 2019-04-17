@@ -4,6 +4,7 @@ import os
 import pathlib
 import pickle as pkl
 import re
+import shutil
 import subprocess
 from random import shuffle
 import numpy as np
@@ -18,15 +19,33 @@ from skimage import io
 import math
 import argparse
 
+LINES_AMOUNT_IN_MULTILINE = 5
+TRAIN_VAL_SPLIT = 0.9
 
-
-ilegal_chars = ['&', '?', 'B', 'C', 'E', 'G', 'H', 'M', 'd', 'g', 'n', '{', '}', '\x81',
-                '\x87', '«', '¹', '»', 'Ä', 'á', '¡', 'Ã', '+']
 
 class SynthDataInfo:
-    def __init__(self, is_long, use_spacing, multi_line):
+    def __init__(self, is_long, use_spacing, multi_line, dataset_name):
         self.multi_line = multi_line
-        self.font_names = ['Qomolangma-Drutsa', 'Qomolangma-Betsu', 'Shangshung Sgoba-KhraChen', 'Shangshung Sgoba-KhraChung']
+        if dataset_name.lower() == 'tibetan':
+            self.font_names = ['Qomolangma-Drutsa', 'Qomolangma-Betsu', 'Shangshung Sgoba-KhraChen', 'Shangshung Sgoba-KhraChung']
+            self.illegal_chars = ['&', '?', 'B', 'C', 'E', 'G', 'H', 'M', 'd', 'g', 'n', '{', '}', '\x81',
+                '\x87', '«', '¹', '»', 'Ä', 'á', '¡', 'Ã', '+']
+            self.legal_line_end_chars = ['༎', '༑',  '།', '་']
+            self.initial_sign = '༄༄་'
+            self.initial_special_sign = '༄༄༄་་'
+            self.legal_sep_strs = ['༎', '༑', '།', '།།']
+            self.fonts_dir = str(pathlib.Path('extra/Fonts').absolute())
+        elif dataset_name.lower() == 'wiener':
+            self.font_names = ['F25 BlackletterTypewriter', 'Breitkopf Fraktur', 'Gabriele Black Ribbon FG',
+                               'CMU Typewriter Text', 'zai Olivetti-Underwood Studio 21 Typewriter',
+                               'TlwgTypewriter', 'CMU Typewriter Text Variable Width', 'Gabriele Dark Ribbon FG',
+                               'Gabriele Light Ribbon FG', ]
+            self.illegal_chars = ['&', '?', '{', '}', '\x81', '\x87', '«', '¹', '»', '+']
+            self.legal_line_end_chars = ['\n']
+            self.initial_sign = '1. '
+            self.initial_special_sign = '2. '
+            self.legal_sep_strs = [' ', '\t']
+            self.fonts_dir = str(pathlib.Path('../../wiener_fonts').absolute())
 
         if is_long:
             self.min_len = 130
@@ -52,9 +71,7 @@ class SynthDataInfo:
         self.num_rand_spaces_range = 3
         self.rand_space_range = [2, 6]
         self.initial_sign_space_range = [1, 8]
-        self.initial_sing = '༄༄་'
         self.initial_sign_prob = 0.1
-        self.initial_special_sing = '༄༄༄་་'
         self.initial_special_sign_prob = 0.01
         self.initial_space_range = [0, 4]
 
@@ -63,12 +80,15 @@ def chunkstring(string, length):
     return (string[0+i:length+i] for i in range(0, len(string), length))
 
 
-'''
-should be: text, min_len = 130, max_len = 180, min_allowed_len = 80, max_allowed_len = 200
-'''
 def split_text(text, data_info_list, data_info_probs):
-    text = text.replace('༑', '།')
-    legal_line_end_chars = ['༎', '༑',  '།', '་']
+    """
+    should be: text, min_len = 130, max_len = 180, min_allowed_len = 80, max_allowed_len = 200
+    """
+
+    text = text.replace('༑', '།') #TODO: generalize
+    # Assuming all data_info has roughly the same set of legal line end characters
+    legal_line_end_chars = set.union(*[set(data_info.legal_line_end_chars) for data_info in data_info_list])
+
     find_last = lambda x: np.max([x.rfind(char) for char in legal_line_end_chars])
     find_first = lambda x: np.min([x.find(char) for char in legal_line_end_chars if (x.find(char) > 0)])
     cur_start = 0
@@ -92,7 +112,8 @@ def split_text(text, data_info_list, data_info_probs):
                 best_idx = find_first(text[cur_start+cur_size:])
                 cur_size = cur_size + best_idx
                 if best_idx == -1 or cur_size > cur_data_info.max_allowed_len:
-                    raise Exception('Cannot find legal ending charcter within a reasonalbe period in text starting from index {}, best_idx: {}, cur_size: {}, max_allowed_len:{}\n'.format(
+                    raise Exception('Cannot find legal ending character within a reasonable period in text starting '
+                                    'from index {}, best_idx: {}, cur_size: {}, max_allowed_len:{}\n'.format(
                         cur_start, best_idx, cur_size, cur_data_info.max_allowed_len
                     ))
             cur_size = best_idx+1
@@ -111,6 +132,7 @@ def split_text(text, data_info_list, data_info_probs):
         cur_start = cur_start+cur_size
     return output_texts, image_texts
 
+
 def add_random_space(texts, data_info):
     if len(texts) == 0:
         raise Exception("No texts given")
@@ -118,11 +140,11 @@ def add_random_space(texts, data_info):
     spaces_sizes_all_lines = np.random.randint(data_info.rand_space_range[0],data_info.rand_space_range[1],
                                                (len(texts),data_info.num_rand_spaces_range))
     spaces_sizes_all_lines = np.split(spaces_sizes_all_lines, spaces_sizes_all_lines.shape[0], axis=0)
-    legal_sep_strs = ['༎', '༑', '།', '།།']
+    legal_sep_strs = data_info.legal_sep_strs
     find_all_sep_strs = lambda string, char: [(m.end()) for m in re.finditer(char, string)]
     insert_spaces = lambda string, index, spaces: string[:index] + spaces + string[index:]
 
-    def insert_seperators(string, num_sep, sep_sizes):
+    def insert_separators(string, num_sep, sep_sizes):
         sep_sizes = sep_sizes.reshape((-1,))
         if num_sep > 0:
             sep_lists = [find_all_sep_strs(string, char) for char in legal_sep_strs]
@@ -151,28 +173,31 @@ def add_random_space(texts, data_info):
                     raise e
         return string
 
-    new_texts = [insert_seperators(text, num_sep, sep_sizes) for text, num_sep, sep_sizes
+    new_texts = [insert_separators(text, num_sep, sep_sizes) for text, num_sep, sep_sizes
                  in zip(texts, num_spaces_per_line, spaces_sizes_all_lines)]
     return new_texts
+
 
 def add_initial_space(texts, data_info):
     spaces_sizes_all_lines = np.random.randint(data_info.initial_space_range[0], data_info.initial_space_range[1], (len(texts),))
     texts = [(' '* sp_size) + txt for txt, sp_size in zip (texts, spaces_sizes_all_lines) ]
     return texts
 
+
 def add_initial_sign(texts, data_info):
     spaces_sizes_all_lines = np.random.randint(data_info.initial_sign_space_range[0],
                                                data_info.initial_sign_space_range[1],
                                                (len(texts),))
     text_probs = np.random.rand(len(texts)).tolist()
-    texts = [data_info.initial_special_sing + (' ' * sp_size) + txt
+    texts = [data_info.initial_special_sign + (' ' * sp_size) + txt
              if prob < data_info.initial_special_sign_prob else txt
              for txt, sp_size, prob in zip(texts, spaces_sizes_all_lines, text_probs)
     ]
-    texts = [data_info.initial_sing + (' ' * sp_size) + txt
+    texts = [data_info.initial_sign + (' ' * sp_size) + txt
              if ((prob >= data_info.initial_special_sign_prob) and (prob < data_info.initial_sign_prob)) else txt
              for txt, sp_size, prob in zip(texts, spaces_sizes_all_lines, text_probs)]
     return texts
+
 
 def split_text_to_files(text_path, num_lines_in_file, data_info_list, data_info_probs):
 
@@ -192,11 +217,14 @@ def split_text_to_files(text_path, num_lines_in_file, data_info_list, data_info_
     texts = sum(texts.values(), [])
     image_texts = sum(image_texts.values(), [])
 
+    # Assuming all data_info has roughly the same set of illegal characters
+    illegal_chars = set.union(*[set(data_info.illegal_chars) for data_info in data_info_list])
+
     image_texts = [image_text for text, image_text in zip(texts, image_texts)
-                   if not any(x in text for x in ilegal_chars)]
+                   if not any(x in text for x in illegal_chars)]
 
     texts = [text for text in texts
-                               if not any(x in text for x in ilegal_chars)]
+             if not any(x in text for x in illegal_chars)]
     '''
     image_texts = texts
     if data_info.has_rand_spaces:
@@ -220,6 +248,7 @@ def split_text_to_files(text_path, num_lines_in_file, data_info_list, data_info_
 
     return texts, image_texts
 
+
 def zip_lines(texts, num_lines_in_file, line_sep):
     zipped_texts = ()
     num_lines_in_file = min(num_lines_in_file, len(texts))
@@ -234,9 +263,10 @@ def zip_lines(texts, num_lines_in_file, line_sep):
     texts = [line_sep.join(data) for data in zipped_texts]
     return texts
 
-def create_images_per_path(orig_path, base_images_path, base_text_path, num_lines_in_file, font_dir,
+
+def create_images_per_path(orig_path, base_images_path, base_text_path, num_lines_in_file, fonts_dir,
                            data_info_list, data_info_probs, base_path_to_save=None, tmp_workplace='./tmp',
-                           do_size_rand=True):
+                           do_size_rand=True, debug=False):
     outdata = []
     try:
         texts, image_texts = split_text_to_files(
@@ -266,15 +296,15 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                 if do_size_rand:
                     font_weight = str(np.random.randint(6))
                     font_stretch = str(np.random.randint(9))
-                    letter_spacing = "'"+str(np.random.randint(3)) + "'"
-                    font_size = "'"+ str(np.random.randint(4)) + "'"
+                    letter_spacing =  "'" + str(np.random.randint(3)) + "'"
+                    font_size = "'" + str(np.random.randint(4)) + "'"
                 else:
                     font_weight = str(3)
                     font_stretch = str(4)
                     letter_spacing = "'" + str(1) + "'"
                     font_size = "'" + str(2) + "'"
                 out_im_path = str(cur_path) + '.png'
-                run_args = ['extra/TextRender/bin/main', im_text, out_im_path, font_dir, font, font_weight,
+                run_args = ['extra/TextRender/bin/main', im_text, out_im_path, fonts_dir, font, font_weight,
                             font_stretch, letter_spacing, font_size]
                 # lock.acquire()
                 subprocess.run(run_args, check=True)
@@ -282,7 +312,7 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                 # save text
                 if data_info_list[0].multi_line:
                     try:
-                        line2im = im2lines(out_im_path, tmp_workplace=tmp_workplace, verbose=False,
+                        line2im = im2lines(out_im_path, tmp_workplace=tmp_workplace, verbose=debug,
                                            max_theta_diff=0.7, do_morphologic_cleaning=False)
                         os.remove(out_im_path)
                     except Exception as e:
@@ -292,7 +322,7 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                     if len(line2im) != len(text.split("\n")):
                         for i, text_line in enumerate(text.split("\n")):
                             line_im_path = cur_path_no_font + "_" + str(i) + "_" + str(font)+".png"
-                            run_args = ['extra/TextRender/bin/main', text_line, line_im_path, font_dir, font, font_weight,
+                            run_args = ['extra/TextRender/bin/main', text_line, line_im_path, fonts_dir, font, font_weight,
                                         font_stretch, letter_spacing, font_size]
                             subprocess.run(run_args, check=True)
                         # print("Image: {} - Found {} lines, but there are {} lines.".format(out_im_path, len(line2im), len(text.split("\n"))))
@@ -310,9 +340,9 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                         outdata.append(str(rel_path) + '   *   ' + text + '\n')
             except Exception as e:
                 print("Error while writing to path: {}".format(path))
-                print('writing tibetan text:')
+                print('Trying to write original text:')
                 print(text)
-                print('original text path is: {}'.format(orig_path))
+                print('Original text path is: {}'.format(orig_path))
                 traceback.print_exc()
 
     return outdata
@@ -322,11 +352,14 @@ def init_multi_p(in_lock):
     global lock
     lock = in_lock
 
+
 def create_all_images(text_dir, outdir, data_info_list,
                       data_info_probs, data_info_name,
-                      do_size_rand, num_parallel, amount_of_text_files2use):
-    num_lines_in_file = 5 if data_info_list[0].multi_line else 1
-    font_dir = str(pathlib.Path('extra/Fonts').absolute())
+                      do_size_rand, num_parallel, amount_of_text_files2use, debug):
+    num_lines_in_file = LINES_AMOUNT_IN_MULTILINE if data_info_list[0].multi_line else 1
+    # Assume all have the same fonts dir
+    assert len(set.union(*[set([data_info.fonts_dir]) for data_info in data_info_list])) == 1
+    fonts_dir = data_info_list[0].fonts_dir
     base_path = pathlib.Path(outdir)
     base_path.mkdir(parents=True, exist_ok=True)
     base_images_path = base_path / 'Images'
@@ -342,23 +375,25 @@ def create_all_images(text_dir, outdir, data_info_list,
     out_file = str(out_file)
 
     if os.path.exists(out_file):
-        raise Exception("Error: output file exists already. If you want to override, please delete it first:\n {}".format(
-            out_file
-        ))
+        if debug:
+            os.remove(out_file)
+        else:
+            raise Exception("Error: output file exists already. If you want to override, please delete it first:\n {}"
+                .format(out_file))
 
-    # save data creation info file
-    for i, (data_info, name) in enumerate(zip(data_info_list,data_info_name)):
+    # Save data creation info file
+    for i, (data_info, name) in enumerate(zip(data_info_list, data_info_name)):
         with open(str(base_path / 'data_info_{}.pkl'.format(name)), 'wb') as data_inf_f:
             pkl.dump(data_info, data_inf_f)
     with open(str(base_path / 'data_info_probabilities.txt'), 'w') as f:
         f.writelines(["name - {} - prob: {}\n".format(name, prob) for name, prob in zip(data_info_name, data_info_probs)])
 
     create_images_partial = partial(create_images_per_path, base_images_path=str(base_images_path),
-                                  base_text_path=str(base_text_path),
-                                  num_lines_in_file=num_lines_in_file,
-                                  font_dir=font_dir,
-                                data_info_list=data_info_list, data_info_probs=data_info_probs,
-                                    do_size_rand=do_size_rand)
+                                    base_text_path=str(base_text_path),
+                                    num_lines_in_file=num_lines_in_file,
+                                    fonts_dir=fonts_dir,
+                                    data_info_list=data_info_list, data_info_probs=data_info_probs,
+                                    do_size_rand=do_size_rand, debug=debug)
 
     l = Lock()
     with Pool(processes=num_parallel,initializer=init_multi_p, initargs=(l,)) as p:
@@ -368,11 +403,11 @@ def create_all_images(text_dir, outdir, data_info_list,
     return flatten(results)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--text_dir',
                         type=str, default='../../Data/Synthetic/Text',
-                        help=('tibetan_dir'))
+                        help=('Text for rendering directory'))
     parser.add_argument('-l', '--line_length',
                         type=str,
                         help=('short|long|mixed'), default='long')
@@ -382,8 +417,14 @@ if __name__=='__main__':
     parser.add_argument('-t', '--tmp_dir',
                        type=str, default='../../Data/Synthetic/tmp',
                        help=('temporary directory'))
+    parser.add_argument('-d', '--dataset_name', type=str,
+                        help='Currently Wiener or Tibetan',
+                        default='Tibetan')
     parser.add_argument('-n', '--num_parallel', type=int,
                         help='number of parallel threads to run', default=16)
+    parser.add_argument('-b', '--debug', type=bool,
+                        help='debug mode - delete output folder, create temporary folder',
+                        default=False)
     parser.add_argument('--remove_space_initial_sign', default=False, action='store_true')
     parser.add_argument('--remove_letter_sizes_rand', default=False, action='store_true')
     parser.add_argument('--no_multi_line', default=False, action='store_true')
@@ -410,29 +451,34 @@ if __name__=='__main__':
     else:
         multi_line = True
 
-    if (args.line_length == 'long'):
-        data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing, multi_line=multi_line),
-                          SynthDataInfo(is_long=True, use_spacing=use_spacing, multi_line=multi_line)]
+    if args.line_length == 'long':
+        data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                          SynthDataInfo(is_long=True, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name)]
         data_info_probs = [0.4, 0.6]
         data_info_name = ['long_space_1', 'long_space_2']
-    elif (args.line_length == 'short'):
-        data_info_list = [SynthDataInfo(is_long=False, use_spacing=use_spacing, multi_line=multi_line),
-                          SynthDataInfo(is_long=False, use_spacing=use_spacing, multi_line=multi_line)]
+    elif args.line_length == 'short':
+        data_info_list = [SynthDataInfo(is_long=False, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                          SynthDataInfo(is_long=False, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name)]
         data_info_probs = [0.4, 0.6]
         data_info_name = ['short_space_1', 'short_space_2']
-    elif (args.line_length == 'mixed'):
-        data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing, multi_line=multi_line),
-                          SynthDataInfo(is_long=False, use_spacing=use_spacing, multi_line=multi_line)]
+    elif args.line_length == 'mixed':
+        data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                          SynthDataInfo(is_long=False, use_spacing=use_spacing,
+                                        multi_line=multi_line, dataset_name=args.dataset_name)]
         data_info_probs = [0.5, 0.5]
         data_info_name = ['long_space', 'short_space']
     else:
         raise Exception('should be one of the above')
 
-
-
     os.makedirs(out_dir, exist_ok=True)
     lines = create_all_images(text_dir_path, out_dir, data_info_list,
-                              data_info_probs, data_info_name, do_size_rand, args.num_parallel, args.amount_of_text_files2use)
+                              data_info_probs, data_info_name, do_size_rand, args.num_parallel,
+                              args.amount_of_text_files2use, args.debug)
     out_file = os.path.join(out_dir, 'data.txt')
     train_file = os.path.join(out_dir, 'data_train.txt')
     val_file = os.path.join(out_dir, 'data_val.txt')
@@ -440,7 +486,7 @@ if __name__=='__main__':
         data_f.writelines(lines)
     idx = np.random.permutation(len(lines)).tolist()
     shuffle(lines)
-    train_idx = int(0.9 * len(lines))
+    train_idx = int(TRAIN_VAL_SPLIT * len(lines))
     val_idx = int(1 * len(lines))
     train_lines = lines[:train_idx]
     val_lines = lines[train_idx:val_idx]
