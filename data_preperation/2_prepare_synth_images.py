@@ -293,6 +293,8 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                 cur_path_no_font = str(path.absolute())
                 if len(data_info_list[0].font_names) > 1:
                     cur_path = cur_path_no_font + '_' + str(font)
+                else:
+                    cur_path = cur_path_no_font
                 if do_size_rand:
                     font_weight = str(np.random.randint(6))
                     font_stretch = str(np.random.randint(9))
