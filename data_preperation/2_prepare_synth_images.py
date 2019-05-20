@@ -286,11 +286,11 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
         # save images
         rel_dir = pathlib.Path(file_base_name) / str(cur_im_num // 1000)
         rel_path = rel_dir / str(cur_im_num)
-        path = pathlib.Path(base_images_path) / rel_path
-        path.parents[0].mkdir(parents=True, exist_ok=True)
+        images_path = pathlib.Path(base_images_path) / rel_path
+        images_path.parents[0].mkdir(parents=True, exist_ok=True)
         for fid, font in enumerate(data_info_list[0].font_names):
             try:
-                cur_path_no_font = str(path.absolute())
+                cur_path_no_font = str(images_path.absolute())
                 if len(data_info_list[0].font_names) > 1:
                     cur_path = cur_path_no_font + '_' + str(font)
                 else:
@@ -322,16 +322,17 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                         print("exception on image: {}".format(out_im_path))
                         traceback.print_exc()
                         continue
-                    if len(line2im) != len(text.split("\n")):
+                    lines_texts = [l for l in text.split("\n") if len(l) > 0]
+                    if len(line2im) != len(lines_texts):
                         for i, text_line in enumerate(text.split("\n")):
                             line_im_path = cur_path_no_font + "_" + str(i) + "_" + str(font)+".png"
                             run_args = ['extra/TextRender/bin/main', text_line, line_im_path, fonts_dir, font, font_weight,
                                         font_stretch, letter_spacing, font_size, is_debug_text_render]
                             subprocess.run(run_args, check=True)
-                        # print("Image: {} - Found {} lines, but there are {} lines.".format(out_im_path, len(line2im), len(text.split("\n"))))
+                            #TODO: fill outdata?
+                        # print("Image: {} - Found {} lines, but there are {} lines.".format(out_im_path, len(line2im), len(lines_texts)))
                     else:
                         for i in range(len(line2im)):
-                            lines_texts = text.split("\n")
                             line_im_path = cur_path_no_font + "_" + str(i) + "_" + str(font)
                             line_im = line2im[i]
                             io.imsave(str(line_im_path) +".png", line_im)
@@ -342,7 +343,7 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                     else:
                         outdata.append(str(rel_path) + '   *   ' + text + '\n')
             except Exception as e:
-                print("Error while writing to path: {}".format(path))
+                print("Error while writing to path: {}".format(images_path))
                 print('Trying to write original text:')
                 print(text)
                 print('Original text path is: {}'.format(orig_path))
