@@ -306,8 +306,9 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                     letter_spacing = "'" + str(1) + "'"
                     font_size = "'" + str(2) + "'"
                 out_im_path = str(cur_path) + '.png'
+                is_debug_text_render = str(1 if debug else 0)
                 run_args = ['extra/TextRender/bin/main', im_text, out_im_path, fonts_dir, font, font_weight,
-                            font_stretch, letter_spacing, font_size]
+                            font_stretch, letter_spacing, font_size, is_debug_text_render]
                 # lock.acquire()
                 subprocess.run(run_args, check=True)
                 # lock.release()
@@ -325,7 +326,7 @@ def create_images_per_path(orig_path, base_images_path, base_text_path, num_line
                         for i, text_line in enumerate(text.split("\n")):
                             line_im_path = cur_path_no_font + "_" + str(i) + "_" + str(font)+".png"
                             run_args = ['extra/TextRender/bin/main', text_line, line_im_path, fonts_dir, font, font_weight,
-                                        font_stretch, letter_spacing, font_size]
+                                        font_stretch, letter_spacing, font_size, is_debug_text_render]
                             subprocess.run(run_args, check=True)
                         # print("Image: {} - Found {} lines, but there are {} lines.".format(out_im_path, len(line2im), len(text.split("\n"))))
                     else:
@@ -357,7 +358,7 @@ def init_multi_p(in_lock):
 
 def create_all_images(text_dir, outdir, data_info_list,
                       data_info_probs, data_info_name,
-                      do_size_rand, num_parallel, amount_of_text_files2use, debug):
+                      do_size_rand, num_parallel, amount_of_text_files2use, tmp_workplace, debug):
     num_lines_in_file = LINES_AMOUNT_IN_MULTILINE if data_info_list[0].multi_line else 1
     # Assume all have the same fonts dir
     assert len(set.union(*[set([data_info.fonts_dir]) for data_info in data_info_list])) == 1
@@ -395,7 +396,7 @@ def create_all_images(text_dir, outdir, data_info_list,
                                     num_lines_in_file=num_lines_in_file,
                                     fonts_dir=fonts_dir,
                                     data_info_list=data_info_list, data_info_probs=data_info_probs,
-                                    do_size_rand=do_size_rand, debug=debug)
+                                    tmp_workplace=tmp_workplace, do_size_rand=do_size_rand, debug=debug)
 
     l = Lock()
     with Pool(processes=num_parallel,initializer=init_multi_p, initargs=(l,)) as p:
@@ -480,7 +481,7 @@ if __name__ == '__main__':
     os.makedirs(out_dir, exist_ok=True)
     lines = create_all_images(text_dir_path, out_dir, data_info_list,
                               data_info_probs, data_info_name, do_size_rand, args.num_parallel,
-                              args.amount_of_text_files2use, args.debug)
+                              args.amount_of_text_files2use, tmp_path, args.debug)
     out_file = os.path.join(out_dir, 'data.txt')
     train_file = os.path.join(out_dir, 'data_train.txt')
     val_file = os.path.join(out_dir, 'data_val.txt')
