@@ -11,14 +11,15 @@ from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
 
+IMAGENAME_LINENUM_SEPARATOR = '_IMLINESEP_'
 
 def images_to_lines(text_dir, im_dir):
     images_paths = glob.glob(os.path.join(im_dir, '*.png'))
-    existing_images = [Path(path).name.split('_')[0].strip() for path in images_paths]  # orig
+    existing_images = [Path(path).name.split(IMAGENAME_LINENUM_SEPARATOR)[0].strip() for path in images_paths]  # orig
     text_paths = glob.glob(os.path.join(text_dir, '*.txt'), recursive=True)
     existing_text = [Path(path).name.split('.')[0].strip() for path in text_paths]
-    # valid_data = set([int(d) for d in existing_images]) & set([int(d) for d in existing_text])  # do_itersection
-    valid_data = set([str(d) for d in existing_images]) & set([str(d) for d in existing_text])  # do_itersection
+    # valid_data = set([int(d) for d in existing_images]) & set([int(d) for d in existing_text])  # do_intersection
+    valid_data = set([str(d) for d in existing_images]) & set([str(d) for d in existing_text])  # do_intersection
     im_to_text = {}
     for data in valid_data:
         cur_pattern = os.path.join(im_dir, '{}_*.png'.format(data))  # [ +]{}_*.png
@@ -32,7 +33,7 @@ def images_to_lines(text_dir, im_dir):
             ))
             continue
         for im in cur_images:
-            id = int(Path(im).name.split('_')[1].split('.')[0])
+            id = int(Path(im).name.split(IMAGENAME_LINENUM_SEPARATOR)[1].split('.')[0])
             line = all_text_lines[id]  # orig
             # line = all_text_lines[id - 1] # tmp
             if len(line) > 1:
@@ -48,22 +49,22 @@ def proccess_image(im_path, output_dir, verbose=True,
                    dataset_name="Tibetan"):
     try:
         im_path_obj = pathlib.Path(im_path)
-        base_name = extract_base_image_name(im_path_obj)
+        base_name = extract_base_image_name(im_path_obj, dataset_name)
         line_images = im2lines(im_path, verbose=verbose, tmp_workplace=tmp_workplace, dataset_name=dataset_name)
         for line, image in line_images.items():
-            line_path = pathlib.Path(output_dir) / (base_name + '_{}.png'.format(line))
+            line_path = pathlib.Path(output_dir) / (base_name + IMAGENAME_LINENUM_SEPARATOR + '{}.png'.format(line))
             imsave(str(line_path), image)
     except Exception as e:
         print("Error proccessing file: {}".format(im_path))
         traceback.print_exc()
 
 
-def extract_base_image_name(im_path_obj):
+def extract_base_image_name(im_path_obj, dataset_name):
     base_file_name = im_path_obj.name.split('.')[0]
-    if '-' in base_file_name:
+    if dataset_name == "Tibetan":
         return base_file_name.split('-')[1].strip()
-    elif '_' in base_file_name:
-        return base_file_name.split('_')[0].strip() # Note difference in index (for Wiener collection)
+    elif dataset_name == "Wiener":
+        return base_file_name #.split('_')[0].strip()
     else:
         return base_file_name
 
