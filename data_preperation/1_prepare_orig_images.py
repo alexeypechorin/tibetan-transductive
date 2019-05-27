@@ -33,7 +33,7 @@ def images_to_lines(text_dir, im_dir):
             ))
             continue
         for im in cur_images:
-            id = int(Path(im).name.split('_')[1].split('.')[0])
+            id = int(Path(im).name.split(IMAGENAME_LINENUM_SEPARATOR)[1].split('.')[0])
             line = all_text_lines[id]  # orig
             # line = all_text_lines[id - 1] # tmp
             if len(line) > 1:
