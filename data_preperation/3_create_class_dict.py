@@ -2,6 +2,8 @@ import pickle
 import os
 import numpy as np
 import argparse
+from data_preperation.dataset_metadata import OCRDataInfo
+
 
 def reduce_line_with_unknown_letters(transcription_file, unknown_letters):
     with open(transcription_file, 'r') as file:
@@ -16,6 +18,7 @@ def reduce_line_with_unknown_letters(transcription_file, unknown_letters):
         bad_lines = [str(rec[0]) + '   *   ' + str(rec[1]) for rec in bad_lines]
         file.writelines(bad_lines)
 
+
 def avg_unknown_letters(transcription_files, unknown_letters):
     text_lines = []
     for trans_file in transcription_files:
@@ -26,7 +29,8 @@ def avg_unknown_letters(transcription_files, unknown_letters):
     num_letters = np.array([float(len(line)) for line in text_lines])
     return avg_unk_letters,num_letters
 
-def class_to_char(transcription_file):
+
+def class_to_char(transcription_file, dataset_info):
     char_to_class = set()
     with open(transcription_file, 'r') as file:
         lines = file.readlines()
@@ -35,9 +39,9 @@ def class_to_char(transcription_file):
     #print([line.split("   *   ") for line in lines if len(line.split("   *   ")) <= 1])
     # print((str(pathlib.Path(base_dir) / splited_lines[0][0]), splited_lines[0][1]))
 
-    ilegal_chars = ['&', '?', 'B', 'C', 'E', 'G', 'H', 'M', 'd', 'g', 'n', '{', '}', '\x81', '\x87', '«', '¹', '»', 'Ä', 'á']
-    bad_lines = [line for line in splited_lines if any(s in line[1] for s in ilegal_chars)]
-    good_lines = [line for line in splited_lines if not any(s in line[1] for s in ilegal_chars)]
+    illegal_chars = dataset_info.illegal_chars
+    bad_lines = [line for line in splited_lines if any(s in line[1] for s in illegal_chars)]
+    good_lines = [line for line in splited_lines if not any(s in line[1] for s in illegal_chars)]
     transcriptions = [line[1] for line in good_lines]
     with open(transcription_file, 'w') as file:
         good_lines = [str(rec[0]) + '   *   ' + str(rec[1]) for rec in good_lines]
@@ -50,13 +54,14 @@ def class_to_char(transcription_file):
     char_to_class.remove('\n')
     return char_to_class
 
-def create_class_dict(synth_transcriptions, orig_transcriptions, out_path, verbose=True):
+
+def create_class_dict(synth_transcriptions, orig_transcriptions, out_path, dataset_info, verbose=True):
     synth_dict = set()
     orig_dict = set()
     for synth in synth_transcriptions:
-        synth_dict |= class_to_char(synth)
+        synth_dict |= class_to_char(synth, dataset_info)
     for orig in orig_transcriptions:
-        orig_dict |= class_to_char(orig)
+        orig_dict |= class_to_char(orig, dataset_info)
     if verbose:
         non_trained_chars = orig_dict - synth_dict
         print(non_trained_chars)
@@ -83,6 +88,7 @@ def create_class_dict(synth_transcriptions, orig_transcriptions, out_path, verbo
 
     return synth_dict
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--synth_transcriptions', nargs='+',
@@ -91,9 +97,14 @@ if __name__ == '__main__':
                         default=[os.path.expandvars('../../Data/Test/Prepared/im2line.txt')])
     parser.add_argument('--out_path', dest="out_path",
                         type=str, default=os.path.expandvars('../../Data/char_to_class'))
+    parser.add_argument('-d', '--dataset_name', type=str,
+                        help='Currently Wiener or Tibetan',
+                        default='Tibetan')
     args = parser.parse_args()
 
-    out_dict = create_class_dict(args.synth_transcriptions, args.orig_transcriptions, args.out_path)
+    dataset_info = OCRDataInfo(args.dataset_name)
+
+    out_dict = create_class_dict(args.synth_transcriptions, args.orig_transcriptions, args.out_path, dataset_info)
 
 
 
