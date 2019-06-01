@@ -205,7 +205,6 @@ class TextDatasetComparison(Dataset):
     def get_lexicon(self):
         return {v: k for k, v in self.lexicon.items()}
 
-
     def __len__(self):
         return len(self.all_records_comp)
 

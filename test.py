@@ -26,6 +26,8 @@ from models.Attention.Loss import NLLLoss
 from dataset.data_transform import Resize, AddWidth, Normalize
 from difflib import get_close_matches
 
+from dataset.dataset_metadata import SynthDataInfo
+
 
 # print_data_visuals(tb_writer, train_data.get_lexicon(), sample["img"], labels_flatten, label_lens, preds, ((epoch_count * len(data_loader)) + iter)))
 def print_data_visuals(net, tb_writer, lexicon, images, labels_flatten, label_lens, preds, n_iter, initial_txt=""):
@@ -35,6 +37,7 @@ def print_data_visuals(net, tb_writer, lexicon, images, labels_flatten, label_le
                           pred_text=preds_text,
                           n_iter=n_iter,
                           initial_title=initial_txt)
+
 
 def text2image(text, font_file='data/extra/Fonts/Qomolangma-Betsu.ttf'): #out_path,
     font_size = 42
@@ -59,9 +62,10 @@ def text2image(text, font_file='data/extra/Fonts/Qomolangma-Betsu.ttf'): #out_pa
     #im.save(out_path)
     return im#(im.size[0])
 
+
 def save_results(net, data, cuda, output_path):
     data_loader = DataLoader(data, batch_size=1, num_workers=2, shuffle=False, collate_fn=text_collate)
-    stop_characters = ['-', '.', '༎', '༑', '།', '་']
+    # stop_characters = ['-', '.', '༎', '༑', '།', '་']
     iterator = tqdm(data_loader)
     all_pred_text = []
     all_label_text = []
@@ -86,12 +90,13 @@ def save_results(net, data, cuda, output_path):
     with open(output_path + '_im.txt', 'w') as fp:
         fp.writelines(all_im_pathes)
 
-def test_attn(net, data, abc, cuda, visualize, batch_size=1,
-         tb_writer=None, n_iter=0, initial_title="", is_trian=True, output_path=None):
-    collate = lambda x: text_collate(x, do_mask=True)
+
+def test_attn(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=None, n_iter=0, initial_title="",
+              is_trian=True, output_path=None):
+    collate = lambda x: text_collate(x, do_mask=True,)
     net.eval()
     data_loader = DataLoader(data, batch_size=1, num_workers=2, shuffle=False, collate_fn=collate)
-    stop_characters = ['-', '.', '༎', '༑',  '།', '་']
+    stop_characters = ['-', '.'] + dataset_info.legal_line_end_chars
     count = 0
     tp = 0
     avg_ed = 0
@@ -198,7 +203,7 @@ def test_attn(net, data, abc, cuda, visualize, batch_size=1,
             fp.writelines(all_label_text)
         with open(output_path + '_{}_{}_im.txt'.format(initial_title, n_iter), 'w') as fp:
             fp.writelines(all_im_pathes)
-        stop_characters = ['-', '.', '༎', '༑', '།', '་']
+        # stop_characters = ['-', '.', '༎', '༑', '།', '་']
 
         all_pred_text = [''.join(c for c in line if not c in stop_characters) for line in all_pred_text]
         with open(output_path + '_{}_{}_pred_no_stopchars.txt'.format(initial_title,n_iter), 'w') as rf:
@@ -212,12 +217,13 @@ def test_attn(net, data, abc, cuda, visualize, batch_size=1,
     avg_loss = float(avg_loss) / float(count)
     return acc, avg_ed, avg_no_stop_ed, avg_loss
 
-def test(net, data, abc, cuda, visualize, batch_size=1,
-         tb_writer=None, n_iter=0, initial_title="", loss_function=None, is_trian=True, output_path=None,
-         do_beam_search=False, do_results=False, word_lexicon=None):
+
+def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=None, n_iter=0, initial_title="",
+         loss_function=None, is_trian=True, output_path=None, do_beam_search=False, do_results=False,
+         word_lexicon=None):
     collate = lambda x: text_collate(x, do_mask=False)
     data_loader = DataLoader(data, batch_size=1, num_workers=2, shuffle=False, collate_fn=collate)
-    stop_characters = ['-', '.', '༎', '༑',  '།', '་']
+    stop_characters = ['-', '.'] + dataset_info.legal_line_end_chars
     garbage = '-'
     count = 0
     tp = 0
@@ -380,7 +386,11 @@ def test(net, data, abc, cuda, visualize, batch_size=1,
 @click.option('--input-height', type=int, default=64, help='Input size')
 @click.option('--visualize', type=bool, default=False, help='Visualize output')
 @click.option('--do_beam_search', type=bool, default=True, help='Visualize output')
-def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend, snapshot, input_height, visualize, do_beam_search):
+@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently Wiener or Tibetan')
+
+
+def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend, snapshot, input_height, visualize,
+         do_beam_search, dataset_name):
     cuda = True
     with open(lexicon_path, 'rb') as f:
         lexicon = pkl.load(f)
@@ -393,6 +403,7 @@ def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend,
     ])
     data = TextDataset(data_path=data_path, lexicon=lexicon,
                                  base_path=base_data_dir, transform=transform, fonts=None)
+    dataset_info = SynthDataInfo(dataset_name)
 
         # data = TextDataset(data_path=data_path, mode="test", transform=transform)
     #else:
@@ -400,19 +411,10 @@ def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend,
     seq_proj = [int(x) for x in seq_proj.split('x')]
     net = load_model(lexicon=data.get_lexicon(), seq_proj=seq_proj, backend=backend,
                      snapshot=snapshot, cuda=cuda, do_beam_search=do_beam_search).eval()
-    acc, avg_ed, avg_no_stop_ed = test(net, data,
-                                         data.get_lexicon(),
-                                         cuda,
-                                         batch_size=1,
-                                         visualize=False,
-                                         tb_writer=None,
-                                         n_iter=0,
-                                         initial_title='val_orig',
-                                         loss_function=None,
-                                         is_trian=False, output_path=output_path,
-                                       do_beam_search=do_beam_search,
-                                       do_results = True
-                                         )
+    acc, avg_ed, avg_no_stop_ed = test(net, data, data.get_lexicon(), cuda, visualize=False, dataset_info=dataset_info,
+                                       batch_size=1, tb_writer=None, n_iter=0, initial_title='val_orig',
+                                       loss_function=None, is_trian=False, output_path=output_path,
+                                       do_beam_search=do_beam_search, do_results=True)
     print("Accuracy: {}".format(acc))
     print("Edit distance: {}".format(avg_ed))
     print("Edit distance without stop signs: {}".format(avg_no_stop_ed))

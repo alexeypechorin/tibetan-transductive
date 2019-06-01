@@ -1,35 +1,28 @@
 import os
 import click
-import string
 import numpy as np
 from tqdm import tqdm
 from models.model_loader import load_model
-from torchvision.transforms import Compose, Lambda
+from torchvision.transforms import Compose
 from dataset.data_transform import Resize, Rotation, ElasticAndSine, ColorGradGausNoise, AddWidth, Normalize, ToGray, OnlyElastic, OnlySine, ColorGrad, ColorGausNoise
-from dataset.data_transform_semi_sup import ResizeDouble, RotationDouble, ElasticAndSineDouble, ColorGradGausNoiseDouble, AddWidthDouble, NormalizeDouble
-from dataset.test_data import TestDataset
-from dataset.text_data import TextDataset, TextDatasetRandomFont, TextDatasetComparison
-from dataset.collate_fn import text_collate, collate_comp
+from dataset.text_data import TextDataset, TextDatasetRandomFont
+from dataset.collate_fn import text_collate
 from utils.data_visualization import TbSummary
 from lr_policy import StepLR, DannLR
 import pickle as pkl
 import glob
-import operator
 
 import torch
 from torch import nn
 from torch import optim
 from torch.autograd import Variable
-from torch import Tensor
 from torch.utils.data import DataLoader
 from warpctc_pytorch import CTCLoss
-from models.crnn import CRNN
 
-from torchvision.utils import make_grid
+from test import test
+from models.new_vat import VATLoss, VATLossSign, LabeledATLoss, LabeledAtAndUnlabeledTestVatLoss, VATonRnnSign, VATonRnnCnnSign, VATonCnnSign
 
-from test import test, print_data_visuals
-from models.vat import virtual_adversarial_loss, comp_loss
-from models.new_vat import VATLoss, VATLossSign, LabeledATLoss, RandomLoss, LabeledAtAndUnlabeledTestVatLoss, VATonRnnSign, VATonRnnCnnSign, VATonCnnSign, PseudoLabel
+from dataset.dataset_metadata import SynthDataInfo
 
 @click.command()
 @click.option('--base-data-dir', type=str,
@@ -90,7 +83,7 @@ from models.new_vat import VATLoss, VATLossSign, LabeledATLoss, RandomLoss, Labe
 @click.option('--do-remove-augs', type=bool, default=False, help='Whether to remove some of the augmentations (for ablation study)')
 @click.option('--aug-to-remove', type=str,
               default='',
-              help="with autmentation to remover out of ['elastic', 'sine', 'sine_rotate', 'rotation', 'color_aug', 'color_gaus', 'color_sine']")
+              help="with augmentation to remover out of ['elastic', 'sine', 'sine_rotate', 'rotation', 'color_aug', 'color_gaus', 'color_sine']")
 @click.option('--do-beam-search', type=bool, default=False, help='whether to do beam search inference in evaluation')
 @click.option('--dropout-conv', type=bool, default=False, help='Whether to do dropout between convolution and rnn.')
 @click.option('--dropout-rnn', type=bool, default=False, help='Whether to do dropout in rnn.')
@@ -107,6 +100,8 @@ from models.new_vat import VATLoss, VATLossSign, LabeledATLoss, RandomLoss, Labe
 @click.option('--ada-ratio', type=float, default=1, help='Ratio of ADA loss vs base loss')
 @click.option('--rnn-hidden-size', type=int, default=128, help='Size of rnn hidden layer')
 @click.option('--do-lr-step', type=bool, default=False, help='Visualize output')
+@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently Wiener or Tibetan')
+
 
 def main(base_data_dir, train_data_path, train_base_dir,
          orig_eval_data_path, orig_eval_base_dir,
@@ -119,7 +114,8 @@ def main(base_data_dir, train_data_path, train_base_dir,
          dropout_conv, dropout_rnn, dropout_output, do_ema, do_gray, do_test_vat, do_test_entropy, do_test_vat_cnn,
          do_test_vat_rnn,
          ada_after_rnn, ada_before_rnn, do_ada_lr, ada_ratio, rnn_hidden_size,
-         do_lr_step
+         do_lr_step,
+         dataset_name
          ):
     if not do_lr_step and not do_ada_lr:
         raise NotImplementedError('learning rate should be either step or ada.')
@@ -151,11 +147,10 @@ def main(base_data_dir, train_data_path, train_base_dir,
 
     sin_magnitude = 4
     rotate_max_angle = 2
-    train_fonts = ['Qomolangma-Betsu', 'Shangshung Sgoba-KhraChen', 'Shangshung Sgoba-KhraChung', 'Qomolangma-Drutsa']
-
+    dataset_info = SynthDataInfo(dataset_name)
+    train_fonts = dataset_info.font_names
 
     all_args = locals()
-
 
     allowed_removals = ['elastic', 'sine', 'sine_rotate', 'rotation', 'color_aug', 'color_gaus', 'color_sine']
     if do_remove_augs and aug_to_remove not in allowed_removals:
@@ -311,9 +306,9 @@ def main(base_data_dir, train_data_path, train_base_dir,
 
                 synth_acc, synth_avg_ed, synth_avg_no_stop_ed, synth_avg_loss = test(net, synth_eval_data,
                                                                                      synth_eval_data.get_lexicon(),
-                                                                                     cuda,
+                                                                                     cuda, visualize=False,
+                                                                                     dataset_info=dataset_info,
                                                                                      batch_size=batch_size,
-                                                                                     visualize=False,
                                                                                      tb_writer=tb_writer,
                                                                                      n_iter=total_iter,
                                                                                      initial_title='val_synth',
@@ -323,14 +318,16 @@ def main(base_data_dir, train_data_path, train_base_dir,
                                                                                      do_beam_search=False)
 
 
-                orig_acc, orig_avg_ed, orig_avg_no_stop_ed, orig_avg_loss = test(net, orig_eval_data, orig_eval_data.get_lexicon(),
-                                             cuda,
-                                             batch_size=batch_size,
-                                             visualize=False,
-                                             tb_writer=tb_writer, n_iter=total_iter,
-                                             initial_title='test_orig',
-                                             loss_function=loss_function,
-                                             output_path=os.path.join(output_dir, 'results'),
+                orig_acc, orig_avg_ed, orig_avg_no_stop_ed, orig_avg_loss = test(net, orig_eval_data,
+                                                                                 orig_eval_data.get_lexicon(), cuda,
+                                                                                 visualize=False,
+                                                                                 dataset_info=dataset_info,
+                                                                                 batch_size=batch_size,
+                                                                                 tb_writer=tb_writer, n_iter=total_iter,
+                                                                                 initial_title='test_orig',
+                                                                                 loss_function=loss_function,
+                                                                                 output_path=os.path.join(output_dir,
+                                                                                                          'results'),
                                                                                  do_beam_search=do_beam_search)
 
 
@@ -638,6 +635,7 @@ def main(base_data_dir, train_data_path, train_base_dir,
         epoch_count += 1
 
     return
+
 
 if __name__ == '__main__':
     main()
