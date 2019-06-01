@@ -18,7 +18,7 @@ from skimage import io
 import math
 import argparse
 
-from data_preperation.dataset_metadata import SynthDataInfo
+from dataset.dataset_metadata import SynthDataInfo
 
 LINES_AMOUNT_IN_MULTILINE = 5
 TRAIN_VAL_SPLIT = 0.9

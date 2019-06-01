@@ -2,7 +2,7 @@ import pickle
 import os
 import numpy as np
 import argparse
-from data_preperation.dataset_metadata import OCRDataInfo
+from dataset.dataset_metadata import OCRDataInfo
 
 
 def reduce_line_with_unknown_letters(transcription_file, unknown_letters):
