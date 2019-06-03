@@ -7,10 +7,12 @@ from random import shuffle, sample
 import numpy as np
 from time import time
 
+
 class Consts(object):
     SOS_CHAR = 'sos'
     EOS_CHAR = 'eos'
     BLANK_CHAR = 'blank'
+
 
 class TextDataset(Dataset):
     def __init__(self, data_path, lexicon, base_path=None, transform=None, fonts=None):
@@ -158,8 +160,9 @@ class TextDatasetRandomFont(Dataset):
         GO = 1
         EOS = 2
         # 'a':97, '0':48
-        self.lexicon['།'] = self.lexicon['་']
-        self.lexicon['༎'] = self.lexicon['་']
+        if '་' in self.lexicon.keys():
+            self.lexicon['།'] = self.lexicon['་']
+            self.lexicon['༎'] = self.lexicon['་']
         try:
             word = [self.lexicon[c] for c in text if c not in ['\n', ' ']]
         except Exception as e:
@@ -239,8 +242,9 @@ class TextDatasetComparison(Dataset):
         GO = 1
         EOS = 2
         # 'a':97, '0':48
-        self.lexicon['།'] = self.lexicon['་']
-        self.lexicon['༎'] = self.lexicon['་']
+        if '་' in self.lexicon.keys():
+            self.lexicon['།'] = self.lexicon['་']
+            self.lexicon['༎'] = self.lexicon['་']
         try:
             word = [self.lexicon[c] for c in text if c not in ['\n', ' ']]
         except Exception as e:
