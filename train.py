@@ -147,7 +147,7 @@ def main(base_data_dir, train_data_path, train_base_dir,
 
     sin_magnitude = 4
     rotate_max_angle = 2
-    dataset_info = SynthDataInfo(dataset_name)
+    dataset_info = SynthDataInfo(None, None, None, dataset_name)
     train_fonts = dataset_info.font_names
 
     all_args = locals()
@@ -213,7 +213,7 @@ def main(base_data_dir, train_data_path, train_base_dir,
         ])
 
     if use_no_font_repeat_data:
-        print('create dataset')
+        print('creating dataset')
         train_data = TextDatasetRandomFont(data_path=train_data_path, lexicon=lexicon,
                                  base_path=train_base_dir, transform=transform_random, fonts=train_fonts)
         print('finished creating dataset')
