@@ -1,0 +1,41 @@
+# Makefile for Writing Make Files Example
+
+# *****************************************************
+# Variables to control Makefile operation
+
+CXX = gcc
+CXXFLAGS = -Wall -g -fPIC -I/usr/include/cairo -I/usr/include/freetype2/freetype -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 \
+-I/usr/include/cairo -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 \
+ -I/usr/include/freetype2 \
+ -pthread -I/usr/include/gtk-2.0 -I/usr/lib/x86_64-linux-gnu/gtk-2.0/include -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/pango-1.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/freetype2 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/libpng12 -I/usr/include/harfbuzz \
+ -pthread -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+
+LDFLAGS = -lcairo -lfreetype -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgio-2.0 -lpangoft2-1.0 -lpangocairo-1.0 -lgdk_pixbuf-2.0 -lcairo -lpango-1.0 -lfontconfig -lgobject-2.0 -lglib-2.0 -lfreetype -lpango-1.0 -lgobject-2.0 -lglib-2.0
+DEPS = render_text_image.h
+
+ODIR=../bin
+OBJ = $(ODIR)/main.o $(ODIR)/render_text_image.o
+SHOW_FONTS_OBJ = $(ODIR)/main_show_fonts.o
+dir_guard=@mkdir -p $(ODIR)
+
+# ****************************************************
+# Targets needed to bring the executable up to date
+
+all: main main_show_fonts
+
+main: $(OBJ)
+	$(dir_guard)
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $(ODIR)/$@
+
+main_show_fonts: $(SHOW_FONTS_OBJ)
+	$(dir_guard)
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $(ODIR)/$@
+
+
+# The main.o target can be written more simply
+
+$(ODIR)/%.o: %.c $(DEPS)
+	$(dir_guard)
+	$(CXX) $(CXXFLAGS) -c -o $@ $< $(LDFLAGS)
+
+
