@@ -55,7 +55,7 @@ You should see these four font families:
    - Shangshung Sgoba-KhraChen
    - Qomolangma-Drutsa
    - Qomolangma-Betsu
-- to test compilation run:
+- To test compilation run (make sure there's a "test" directory for the result to appear):
 ```console
 bash test.sh
 ```
