@@ -70,11 +70,11 @@ cd Src/utils/warp-ctc
 mkdir build; cd build
 cmake ..
 make
+export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/cuda-8.0/include'
+#export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/stow/cuda-8.0/lib/cuda-8.0/include/'
 cd ../pytorch_binding
 python setup.py install
 cd ../..
-export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/cuda-8.0/include'
-#export CFLAGS='-Wall -Wextra -std=c99 -I/usr/local/stow/cuda-8.0/lib/cuda-8.0/include/'
 git clone --recursive https://github.com/parlance/ctcdecode.git
 cd ctcdecode
 pip install .
