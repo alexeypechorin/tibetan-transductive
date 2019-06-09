@@ -1,6 +1,5 @@
 import os
 import cv2
-import string
 from tqdm import tqdm
 import click
 import numpy as np
@@ -12,14 +11,10 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from utils.my_edit_distance import my_edit_distance_backpointer, Statistics
 
-from models.crnn import CRNN
-from models.model_loader import load_attn_model
-from dataset.test_data import TestDataset
 from dataset.text_data import TextDataset
 from dataset.collate_fn import text_collate
 from models.model_loader import load_model
 from torchvision.transforms import Compose
-from nltk.metrics import ConfusionMatrix
 import editdistance
 from models.Attention.Loss import NLLLoss
 

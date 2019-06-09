@@ -3,7 +3,6 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import torchvision.models as models
-import string
 import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from dataset.collate_fn import calc_im_seq_len

@@ -2,9 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import operator
-import torchvision.models as models
 import models.load_models as my_models
-import string
 import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from dataset.collate_fn import calc_im_seq_len
