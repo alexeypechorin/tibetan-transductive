@@ -386,7 +386,7 @@ def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=
 @click.option('--input-height', type=int, default=64, help='Input size')
 @click.option('--visualize', type=bool, default=False, help='Visualize output')
 @click.option('--do_beam_search', type=bool, default=True, help='Visualize output')
-@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently Wiener or Tibetan')
+@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently wiener or tibetan')
 
 
 def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend, snapshot, input_height, visualize,
@@ -403,7 +403,7 @@ def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend,
     ])
     data = TextDataset(data_path=data_path, lexicon=lexicon,
                                  base_path=base_data_dir, transform=transform, fonts=None)
-    dataset_info = SynthDataInfo(dataset_name)
+    dataset_info = SynthDataInfo(dataset_name.lower())
 
         # data = TextDataset(data_path=data_path, mode="test", transform=transform)
     #else:

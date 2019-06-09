@@ -98,11 +98,11 @@ if __name__ == '__main__':
     parser.add_argument('--out_path', dest="out_path",
                         type=str, default=os.path.expandvars('../../Data/char_to_class'))
     parser.add_argument('-d', '--dataset_name', type=str,
-                        help='Currently Wiener or Tibetan',
-                        default='Tibetan')
+                        help='Currently wiener or tibetan',
+                        default='tibetan')
     args = parser.parse_args()
 
-    dataset_info = OCRDataInfo(args.dataset_name)
+    dataset_info = OCRDataInfo(args.dataset_name.lower())
 
     out_dict = create_class_dict(args.synth_transcriptions, args.orig_transcriptions, args.out_path, dataset_info)
 

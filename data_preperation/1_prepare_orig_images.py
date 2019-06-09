@@ -46,7 +46,7 @@ def images_to_lines(text_dir, im_dir):
 
 def proccess_image(im_path, output_dir, verbose=True,
                    tmp_workplace="/home/wolf/alexeyp/ocr_datasets/wiener_transcribed/wiener_zahi_clean/data4debug/tmp_workplace_closing_square15_open_4_20",
-                   dataset_name="Tibetan"):
+                   dataset_name="tibetan"):
     try:
         im_path_obj = pathlib.Path(im_path)
         base_name = extract_base_image_name(im_path_obj, dataset_name)
@@ -61,9 +61,9 @@ def proccess_image(im_path, output_dir, verbose=True,
 
 def extract_base_image_name(im_path_obj, dataset_name):
     base_file_name = im_path_obj.name.split('.')[0]
-    if dataset_name == "Tibetan":
+    if dataset_name == "tibetan":
         return base_file_name.split('-')[1].strip()
-    elif dataset_name == "Wiener":
+    elif dataset_name == "wiener":
         return base_file_name #.split('_')[0].strip()
     else:
         return base_file_name
@@ -86,8 +86,8 @@ if __name__ == '__main__':
                         help='path to folder for temporary workplace',
                         default='/home/wolf/alexeyp/ocr_datasets/wiener_transcribed/wiener_zahi_clean/data4debug/tmp_workplace_closing_square15_open_4_20')
     parser.add_argument('-d', '--dataset_name', type=str,
-                        help='Currently Wiener or Tibetan',
-                        default='Tibetan')
+                        help='Currently wiener or tibetan',
+                        default='tibetan')
     parser.add_argument('-n', '--num_parallel', type=int,
                         help='number of parallel threads to run', default=8)
     parser.add_argument('-b', '--debug', type=bool,
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # split images to lines and save each line image
     proccess_image_partial = partial(proccess_image,
                                      output_dir=out_im_dir, verbose=args.verbose, tmp_workplace=args.tmp_workplace,
-                                     dataset_name=args.dataset_name)
+                                     dataset_name=args.dataset_name.lower())
     with Pool(5) as p:
         list(tqdm.tqdm(p.imap(proccess_image_partial, images_paths), total=len(images_paths)))
     # do image to line

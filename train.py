@@ -100,7 +100,7 @@ from dataset.dataset_metadata import SynthDataInfo
 @click.option('--ada-ratio', type=float, default=1, help='Ratio of ADA loss vs base loss')
 @click.option('--rnn-hidden-size', type=int, default=128, help='Size of rnn hidden layer')
 @click.option('--do-lr-step', type=bool, default=False, help='Visualize output')
-@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently Wiener or Tibetan')
+@click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently wiener or tibetan')
 
 
 def main(base_data_dir, train_data_path, train_base_dir,
@@ -147,7 +147,7 @@ def main(base_data_dir, train_data_path, train_base_dir,
 
     sin_magnitude = 4
     rotate_max_angle = 2
-    dataset_info = SynthDataInfo(None, None, None, dataset_name)
+    dataset_info = SynthDataInfo(None, None, None, dataset_name.lower())
     train_fonts = dataset_info.font_names
 
     all_args = locals()

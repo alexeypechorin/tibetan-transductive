@@ -370,8 +370,8 @@ if __name__ == '__main__':
                        type=str, default='../../Data/Synthetic/tmp',
                        help=('temporary directory'))
     parser.add_argument('-d', '--dataset_name', type=str,
-                        help='Currently Wiener or Tibetan',
-                        default='Tibetan')
+                        help='Currently wiener or tibetan',
+                        default='tibetan')
     parser.add_argument('-n', '--num_parallel', type=int,
                         help='number of parallel threads to run', default=16)
     parser.add_argument('-b', '--debug', type=bool,
@@ -384,6 +384,7 @@ if __name__ == '__main__':
                         help='number of text files to process')
     args = parser.parse_args()
 
+    dataset_name = args.dataset_name.lower()
     text_dir_path = args.text_dir
     out_dir = args.output_dir
     tmp_path = args.tmp_dir
@@ -405,23 +406,23 @@ if __name__ == '__main__':
 
     if args.line_length == 'long':
         data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                                        multi_line=multi_line, dataset_name=dataset_name),
                           SynthDataInfo(is_long=True, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name)]
+                                        multi_line=multi_line, dataset_name=dataset_name)]
         data_info_probs = [0.4, 0.6]
         data_info_name = ['long_space_1', 'long_space_2']
     elif args.line_length == 'short':
         data_info_list = [SynthDataInfo(is_long=False, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                                        multi_line=multi_line, dataset_name=dataset_name),
                           SynthDataInfo(is_long=False, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name)]
+                                        multi_line=multi_line, dataset_name=dataset_name)]
         data_info_probs = [0.4, 0.6]
         data_info_name = ['short_space_1', 'short_space_2']
     elif args.line_length == 'mixed':
         data_info_list = [SynthDataInfo(is_long=True, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name),
+                                        multi_line=multi_line, dataset_name=dataset_name),
                           SynthDataInfo(is_long=False, use_spacing=use_spacing,
-                                        multi_line=multi_line, dataset_name=args.dataset_name)]
+                                        multi_line=multi_line, dataset_name=dataset_name)]
         data_info_probs = [0.5, 0.5]
         data_info_name = ['long_space', 'short_space']
     else:
