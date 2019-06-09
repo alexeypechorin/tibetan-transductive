@@ -25,11 +25,11 @@ function analyze_files {
 
 
 wiener_base_path=/specific/disk1/home/alexeyp/Tibetan_Transductive/Data/wiener/
-wiener_files='Synthetic/PreparedFullEqualized/data_train.txt Synthetic/PreparedFullEqualized/Images  Original/Prepared20Images/im2line.txt  Original/Prepared20Images/LineImages  Synthetic/PreparedFullEqualized/data_val.txt Synthetic/PreparedFullEqualized/Images char_to_class.pkl'
+wiener_files='Synthetic/PreparedFullEqualized/data_train.txt Synthetic/PreparedFullEqualized/Images  Original/Prepared20Images/im2line.txt  Original/Prepared20Images/LineImages  Synthetic/PreparedFullEqualized/data_val.txt Synthetic/PreparedFullEqualized/Images char_to_class.txt'
 
 
 tibetan_base_path=/specific/disk1/home/alexeyp/Tibetan_Transductive/Data/
-tibetan_files='Synthetic/Prepared/data_train.txt  Synthetic/Prepared/Images  Original/Prepared/im2line.txt Original/Prepared/LineImages Synthetic/Prepared/data_val.txt  Synthetic/Prepared/Images  char_to_class.pkl'
+tibetan_files='Synthetic/Prepared/data_train.txt  Synthetic/Prepared/Images  Original/Prepared/im2line.txt Original/Prepared/LineImages Synthetic/Prepared/data_val.txt  Synthetic/Prepared/Images  char_to_class.txt'
 
 
 analyze_files $wiener_base_path $wiener_files > wiener_result
