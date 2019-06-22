@@ -352,7 +352,7 @@ def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=
             fp.writelines(all_label_text)
         with open(output_path + '_{}_{}_im.txt'.format(initial_title, n_iter), 'w') as fp:
             fp.writelines(all_im_pathes)
-        stop_characters = ['-', '.', '༎', '༑', '།', '་']
+        stop_characters = ['-', '.'] + dataset_info.legal_line_end_chars
 
         all_pred_text = [''.join(c for c in line if not c in stop_characters) for line in all_pred_text]
         with open(output_path + '_{}_{}_pred_no_stopchars.txt'.format(initial_title,n_iter), 'w') as rf:
@@ -380,7 +380,7 @@ def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=
 @click.option('--snapshot', type=str, default='/home/sivankeret/tibetan/04_results/thesis/test_vat_sign_ratio_10_eps_025_xi_minus6/model/crnn_resnet18_250000', help='Pre-trained weights')
 @click.option('--input-height', type=int, default=64, help='Input size')
 @click.option('--visualize', type=bool, default=False, help='Visualize output')
-@click.option('--do_beam_search', type=bool, default=True, help='Visualize output')
+@click.option('--do_beam_search', type=bool, default=True, help='Do beam search')
 @click.option('--dataset-name', type=str, default='tibetan', help='Dataset name, currently wiener or tibetan')
 
 
@@ -398,7 +398,7 @@ def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend,
     ])
     data = TextDataset(data_path=data_path, lexicon=lexicon,
                                  base_path=base_data_dir, transform=transform, fonts=None)
-    dataset_info = SynthDataInfo(dataset_name.lower())
+    dataset_info = SynthDataInfo(None, None, None, dataset_name.lower())
 
         # data = TextDataset(data_path=data_path, mode="test", transform=transform)
     #else:
