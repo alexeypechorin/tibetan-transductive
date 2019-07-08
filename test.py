@@ -406,7 +406,7 @@ def main(data_path, base_data_dir, lexicon_path, output_path, seq_proj, backend,
     seq_proj = [int(x) for x in seq_proj.split('x')]
     net = load_model(lexicon=data.get_lexicon(), seq_proj=seq_proj, backend=backend,
                      snapshot=snapshot, cuda=cuda, do_beam_search=do_beam_search).eval()
-    acc, avg_ed, avg_no_stop_ed = test(net, data, data.get_lexicon(), cuda, visualize=False, dataset_info=dataset_info,
+    acc, avg_ed, avg_no_stop_ed = test(net, data, data.get_lexicon(), cuda, visualize=visualize, dataset_info=dataset_info,
                                        batch_size=1, tb_writer=None, n_iter=0, initial_title='val_orig',
                                        loss_function=None, is_trian=False, output_path=output_path,
                                        do_beam_search=do_beam_search, do_results=True)
