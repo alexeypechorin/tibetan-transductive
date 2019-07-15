@@ -321,6 +321,7 @@ def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=
 
     if do_results and output_path is not None:
         print('printing results! :)')
+        print("output_path", output_path)
         sorted_im_by_error = sorted(im_by_error.items(), key=operator.itemgetter(1))
         sorted_im = [key for (key, value) in sorted_im_by_error]
         all_im_pathes_no_new_line = [im.replace('\n','') for im in all_im_pathes]
@@ -360,13 +361,16 @@ def test(net, data, abc, cuda, visualize, dataset_info, batch_size=1, tb_writer=
         all_label_text = [''.join(c for c in line if not c in stop_characters) for line in all_label_text]
         with open(output_path + '_{}_{}_label_no_stopchars.txt'.format(initial_title, n_iter), 'w') as rf:
             rf.writelines(all_label_text)
-
-    acc = float(avg_accuracy) / float(count)
-    avg_ed = float(avg_ed) / float(count)
-    avg_no_stop_ed = float(avg_no_stop_ed) / float(count)
-    if loss_function is not None:
-        avg_loss = float(avg_loss) / float(count)
-        return acc, avg_ed, avg_no_stop_ed, avg_loss
+    if count > 0:
+        acc = float(avg_accuracy) / float(count)
+        avg_ed = float(avg_ed) / float(count)
+        avg_no_stop_ed = float(avg_no_stop_ed) / float(count)
+        if loss_function is not None:
+            avg_loss = float(avg_loss) / float(count)
+            return acc, avg_ed, avg_no_stop_ed, avg_loss
+    else:
+        print("Warning! Count is 0, no output")
+        acc, avg_ed, avg_no_stop_ed = 0.0, 0.0, 0.0
     return acc, avg_ed, avg_no_stop_ed
 
 @click.command()
