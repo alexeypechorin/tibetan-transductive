@@ -20,14 +20,16 @@ class TextDataset(Dataset):
         self.data_path = data_path
         self.transform = transform
         self.lexicon = lexicon
-        self.lexicon = lexicon
 
         with open(data_path, 'r') as f:
             lines = f.readlines()
         shuffle(lines)
         all_records = [line.split("   *   ") for line in lines if len(line.split("   *   ")) > 1]
+        if len(all_records) == 0: # no line2image mappings found
+            all_records = [(filename, self.lexicon.keys[0] * 10) for filename in os.listdir(base_path)]
+
         if base_path:
-            all_records = [(os.path.join(base_path, rec[0]),rec[1]) for rec in all_records]
+            all_records = [(os.path.join(base_path, rec[0]), rec[1]) for rec in all_records]
         if fonts is not None:
             self.all_records = []
             num_not_found = 0
