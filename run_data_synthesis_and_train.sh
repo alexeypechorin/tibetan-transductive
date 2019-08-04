@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 cd data_preperation;
+
 python 1_prepare_orig_images.py;
 python 2_prepare_synth_images.py;
 python 3_create_class_dict.py;
