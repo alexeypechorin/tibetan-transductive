@@ -1,1 +1,5 @@
 utils/warp-ctc
+.DS_Store
+Hebrew/.DS_Store
+data_preperation/.DS_Store
+data_preperation/extra/.DS_Store
