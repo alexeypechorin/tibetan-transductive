@@ -65,6 +65,9 @@ def extract_base_image_name(im_path_obj, dataset_name):
         return base_file_name.split('-')[1].strip()
     elif dataset_name == "wiener":
         return base_file_name #.split('_')[0].strip()
+    elif dataset_name == "dss":
+        return base_file_name
+
     else:
         return base_file_name
 
@@ -86,7 +89,7 @@ if __name__ == '__main__':
                         help='path to folder for temporary workplace',
                         default='/home/wolf/alexeyp/ocr_datasets/wiener_transcribed/wiener_zahi_clean/data4debug/tmp_workplace_closing_square15_open_4_20')
     parser.add_argument('-d', '--dataset_name', type=str,
-                        help='Currently wiener or tibetan',
+                        help='Currently wiener, tibetan or dss',
                         default='tibetan')
     parser.add_argument('-n', '--num_parallel', type=int,
                         help='number of parallel threads to run', default=8)
