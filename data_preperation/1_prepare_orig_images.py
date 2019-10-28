@@ -71,6 +71,14 @@ def extract_base_image_name(im_path_obj, dataset_name):
     else:
         return base_file_name
 
+
+def extract_image_file_extension(dataset_name):
+    if dataset_name == 'dss':
+        return 'png'
+    else:
+        return 'jpg'
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-i', '--input_im_dir', type=str,
@@ -109,7 +117,8 @@ if __name__ == '__main__':
     os.makedirs(args.output_dir)
     out_im_dir = os.path.join(args.output_dir, 'LineImages')
     os.makedirs(out_im_dir)
-    images_paths = glob.glob(os.path.join(args.input_im_dir, '*.jpg'), recursive=True)
+    image_file_extension = extract_image_file_extension(args.dataset_name.lower())
+    images_paths = glob.glob(os.path.join(args.input_im_dir, '*.' + image_file_extension), recursive=True)
     # split images to lines and save each line image
     proccess_image_partial = partial(proccess_image,
                                      output_dir=out_im_dir, verbose=args.verbose, tmp_workplace=args.tmp_workplace,
